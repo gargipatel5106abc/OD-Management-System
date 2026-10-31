@@ -1,0 +1,22 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/analytics/route": "app/api/analytics/route.js",
+  "/api/auth/switch/route": "app/api/auth/switch/route.js",
+  "/api/audit-logs/route": "app/api/audit-logs/route.js",
+  "/api/events/[id]/participants/route": "app/api/events/[id]/participants/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/api/auth/personas/route": "app/api/auth/personas/route.js",
+  "/api/notifications/route": "app/api/notifications/route.js",
+  "/faculty/page": "app/faculty/page.js",
+  "/api/od-requests/[id]/faculty-correct/route": "app/api/od-requests/[id]/faculty-correct/route.js",
+  "/page": "app/page.js",
+  "/api/events/route": "app/api/events/route.js",
+  "/api/events/[id]/route": "app/api/events/[id]/route.js",
+  "/swc/page": "app/swc/page.js",
+  "/api/od-requests/[id]/route": "app/api/od-requests/[id]/route.js",
+  "/student/page": "app/student/page.js",
+  "/api/od-requests/[id]/clarify/route": "app/api/od-requests/[id]/clarify/route.js",
+  "/api/od-requests/route": "app/api/od-requests/route.js",
+  "/api/od-requests/[id]/swc-decide/route": "app/api/od-requests/[id]/swc-decide/route.js",
+  "/club/page": "app/club/page.js"
+}

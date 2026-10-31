@@ -1,0 +1,238 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      String   // STUDENT, CLUB, FACULTY, SWC
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student            Student?
+  facultyCoordinator FacultyCoordinator?
+  studentCoordinator StudentCoordinator?
+  notifications      Notification[]
+}
+
+model Student {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  regNo       String   @unique
+  name        String
+  program     String   // e.g. B.Tech Computer Science and Engineering
+  school      String   // e.g. SCOPE, SENSE, SELECT, SMEC
+  year        Int      // 1, 2, 3, 4
+  section     String   // e.g. A, B, C
+  odHoursUsed Float    @default(0)
+  maxHours    Float    @default(40)
+  phone       String?
+  email       String
+
+  odRequests  ODRequest[]
+  odRecords   ODRecord[]
+}
+
+model FacultyCoordinator {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId  String   @unique
+  name        String
+  department  String
+  phone       String?
+  email       String
+
+  clubs       Club[]
+}
+
+model StudentCoordinator {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  regNo     String
+  name      String
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+}
+
+model Club {
+  id                   String   @id @default(uuid())
+  name                 String   @unique
+  code                 String   @unique // e.g. CODECHEF, ROBOTICS, IEEE
+  category             String   // TECHNICAL, CULTURAL, SPORTS, SOCIAL
+  description          String
+  facultyCoordinatorId String
+  facultyCoordinator   FacultyCoordinator @relation(fields: [facultyCoordinatorId], references: [id])
+  logo                 String?
+  createdAt            DateTime @default(now())
+
+  studentCoordinators  StudentCoordinator[]
+  events               Event[]
+}
+
+model Event {
+  id                   String   @id @default(uuid())
+  title                String
+  eventCode            String   @unique
+  clubId               String
+  club                 Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  description          String
+  category             String   // TECHNICAL, CULTURAL, SPORTS, WORKSHOP, HACKATHON, CONFERENCE, OTHER
+  eventDate            String   // ISO YYYY-MM-DD
+  startTime            String   // HH:MM (e.g. 09:00)
+  endTime              String   // HH:MM (e.g. 17:00)
+  expectedHours        Float    // calculated hours
+  venue                String   // e.g. VIT Chennai Auditorium / Netaji Auditorium
+  latitude             Float?   // e.g. 12.8406
+  longitude            Float?   // e.g. 80.1534 (VIT Chennai Kelambakkam)
+  venueRadiusMeters    Float    @default(500)
+  expectedParticipants Int
+  reasonOD             String
+  status               String   // PENDING_SWC, SWC_APPROVED, SWC_REJECTED, COMPLETED, CANCELLED
+  swcRemarks           String?
+  approvedAt           DateTime?
+  proposalDocUrl       String?
+  posterUrl            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  participants         EventParticipant[]
+  odRequests           ODRequest[]
+  odRecords            ODRecord[]
+}
+
+model EventParticipant {
+  id                String   @id @default(uuid())
+  eventId           String
+  event             Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  regNo             String
+  studentName       String
+  program           String?
+  year              Int?
+  section           String?
+  participationType String   @default("PARTICIPANT") // PARTICIPANT, ORGANIZER, VOLUNTEER, WINNER
+  attendanceStatus  String   @default("PRESENT")     // PRESENT, ABSENT
+  addedBy           String   @default("CLUB")        // CLUB, FACULTY_CORRECTION
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([eventId, regNo])
+}
+
+model ODRequest {
+  id                     String    @id @default(uuid())
+  requestNumber          String    @unique // e.g. OD-2026-1001
+  studentId              String
+  student                Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  eventId                String
+  event                  Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reason                 String
+  status                 String    // SUBMITTED, AUTO_VERIFIED, VERIFICATION_REQUIRED, SWC_APPROVED, REJECTED, CLARIFICATION_REQUESTED
+  requestedHours         Float
+  studentExplanation     String?   // Clarification message from student if mismatch
+  clubExplanation        String?   // Clarification response from club coordinator
+  facultyCorrectionNotes String?   // Corrections notes from Faculty Coordinator
+  facultyCorrectedAt     DateTime?
+  rejectionReason        String?
+  swcRemarks             String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  evidences              Evidence[]
+  verificationResult     VerificationResult?
+  odRecord               ODRecord?
+}
+
+model ODRecord {
+  id                String   @id @default(uuid())
+  odRequestId       String   @unique
+  odRequest         ODRequest @relation(fields: [odRequestId], references: [id], onDelete: Cascade)
+  studentId         String
+  student           Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  eventId           String
+  event             Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  regNo             String
+  studentName       String
+  eventTitle        String
+  clubName          String
+  eventDate         String
+  startTime         String
+  endTime           String
+  hoursGranted      Float
+  venue             String
+  approvalAuthority String   @default("Student Welfare Centre (SWC) - VIT Chennai")
+  approvedAt        DateTime @default(now())
+  recordHash        String   // Immutable tamper-detection signature
+  createdAt         DateTime @default(now())
+}
+
+model Evidence {
+  id                   String    @id @default(uuid())
+  odRequestId          String
+  odRequest            ODRequest @relation(fields: [odRequestId], references: [id], onDelete: Cascade)
+  type                 String    // REGISTRATION_PROOF, CERTIFICATE, TICKET_PASS, SCREENSHOT, GEOTAGGED_PHOTO, OTHER
+  title                String
+  fileName             String
+  fileUrl              String
+  fileSize             String?
+  mimeType             String?
+  gpsLatitude          Float?
+  gpsLongitude         Float?
+  photoTimestamp       DateTime?
+  photoLocationName    String?
+  isGeoVerified        Boolean   @default(false)
+  geoVerificationNotes String?
+  createdAt            DateTime  @default(now())
+}
+
+model VerificationResult {
+  id                    String    @id @default(uuid())
+  odRequestId           String    @unique
+  odRequest             ODRequest @relation(fields: [odRequestId], references: [id], onDelete: Cascade)
+  checkEventExists      Boolean   @default(false)
+  checkSwcApproved      Boolean   @default(false)
+  checkDateMatch        Boolean   @default(false)
+  checkTimeMatch        Boolean   @default(false)
+  checkParticipantMatch Boolean   @default(false)
+  checkEvidenceMatch    Boolean   @default(false)
+  checkLocationMatch    Boolean   @default(false)
+  checkOdLimit          Boolean   @default(false)
+  overallStatus         String    // VERIFIED, VERIFICATION_REQUIRED, FAILED
+  mismatchDetails       String?
+  verifiedAt            DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String   // STUDENT, CLUB, FACULTY, SWC
+  title     String
+  message   String
+  type      String   // INFO, SUCCESS, WARNING, ACTION_REQUIRED
+  linkUrl   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String   // EVENT, OD_REQUEST, PARTICIPANT_LIST, OD_RECORD
+  entityId   String
+  actorName  String
+  actorRole  String   // STUDENT, CLUB, FACULTY, SWC, SYSTEM
+  details    String
+  timestamp  DateTime @default(now())
+}
+
